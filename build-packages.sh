@@ -167,7 +167,7 @@ write_build_provenance() {
 }
 
 main() {
-  [[ $(uname -m) == "aarch64" ]] || fail "This builds the Apple Silicon packages; run it on aarch64."
+  omarchy-hw-aarch64 || fail "This builds the Apple Silicon packages; run it on aarch64."
   command -v makepkg >/dev/null || fail "makepkg is required (install base-devel)."
   command -v pacman >/dev/null || fail "pacman is required to check build dependencies."
   (( EUID != 0 )) || fail "Run this as your regular user, not as root."
