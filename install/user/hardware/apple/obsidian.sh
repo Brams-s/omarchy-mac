@@ -13,9 +13,10 @@ if omarchy-hw-aarch64 && omarchy-cmd-missing obsidian; then
 
   # The Omarchy ARM repo carries a built obsidian-appimage, so try the repos
   # first: it is a 118 MB AppImage that every machine would otherwise download
-  # and repack for itself. omarchy-pkg-add skips packages the repos do not have,
-  # so fall back to building when the repo is missing or unreachable.
-  omarchy-pkg-add obsidian-appimage
+  # and repack for itself. This desktop app is optional: handle a repository
+  # failure here so strict provisioning can still reach the AUR fallback.
+  omarchy-pkg-add obsidian-appimage ||
+    echo "Warning: the repository install failed; trying the Obsidian AUR fallback if needed." >&2
 
   if omarchy-cmd-missing obsidian; then
     omarchy-pkg-aur-add obsidian-appimage ||
