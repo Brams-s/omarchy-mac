@@ -10,6 +10,7 @@ set -euo pipefail
 
 # This file lives at install/aarch64/install.sh; checkout is the repo root.
 readonly checkout="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
+export PATH="$checkout/bin:${PATH:-}"
 readonly package_output="$checkout/build-output"
 readonly asahi_alarm_key="12CE6799A94A3F1B5DDFFE88F576553597FB8FEB"
 source "$checkout/install/helpers/arm-package-sources.sh"
@@ -209,6 +210,9 @@ install_default_package_set() {
       pacman -Q "$package" >/dev/null || fail "Compatible package missing after system upgrade: $package"
       continue
     fi
+    # Local archives (including the font) may not have a sync/AUR entry.
+    # An installed package already satisfies the default set.
+    pacman -Q "$package" >/dev/null 2>&1 && continue
     # These compile a dependency chain for hours before failing an architecture
     # check, so do not start them unless asked to.
     if (( ! attempt_unavailable )) && package_is_unavailable_here "$package"; then
@@ -224,7 +228,9 @@ install_default_package_set() {
   fi
 
   # Apple GPUs cannot run gpu-screen-recorder; recording falls back to this.
-  yay -S --needed --noconfirm wf-recorder </dev/null || skipped+=("wf-recorder")
+  if ! pacman -Q wf-recorder >/dev/null 2>&1; then
+    yay -S --needed --noconfirm wf-recorder </dev/null || skipped+=("wf-recorder")
+  fi
 
   if (( ${#skipped[@]} )); then
     warn "Skipped packages with no aarch64 build: ${skipped[*]}"
@@ -289,4 +295,6 @@ main() {
   log "Install complete. Reboot to start Omarchy."
 }
 
-main "$@"
+if [[ ${BASH_SOURCE[0]} == "$0" ]]; then
+  main "$@"
+fi

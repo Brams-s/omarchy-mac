@@ -46,8 +46,16 @@ warn() { :; }
 load_unavailable_packages() { :; }
 should_attempt_unavailable() { return 1; }
 package_is_unavailable_here() { return 1; }
-pacman() { [[ $1 == "-Q" ]] && printf '%s\n' "$2" >> "$test_tmp/checked"; }
-yay() { printf '%s\n' "$*" >> "$test_tmp/yay"; }
+mkdir "$test_tmp/installed"
+pacman() {
+  [[ $1 == "-Q" ]] || return 1
+  printf '%s\n' "$2" >> "$test_tmp/checked"
+  omarchy_arm_package_is_selected "$2" || [[ $2 == ttf-jetbrains-mono-nerd-basic || -f $test_tmp/installed/$2 ]]
+}
+yay() {
+  printf '%s\n' "$*" >> "$test_tmp/yay"
+  touch "$test_tmp/installed/${@: -1}"
+}
 install_default_package_set
 for package in hyprland hyprtoolkit hyprland-guiutils; do
   if grep -qxF "$package" "$ROOT/install/omarchy-base.packages"; then
@@ -56,7 +64,8 @@ for package in hyprland hyprtoolkit hyprland-guiutils; do
   ! grep -qE "(^| )$package( |$)" "$test_tmp/yay" || fail "$package must not be downgraded by yay"
 done
 grep -q 'wf-recorder' "$test_tmp/yay" || fail 'regular package path still runs'
-pass 'default package loop preserves the compatibility transaction selection'
+! grep -q 'ttf-jetbrains-mono-nerd-basic' "$test_tmp/yay" || fail 'the locally installed font does not need a sync/AUR entry'
+pass 'default package loop preserves compatibility selections and installed local archives'
 
 for config in "$ROOT"/default/pacman/aarch64/pacman*.conf; do
   section=$(sed -n '/^\[omarchy\]$/,/^$/p' "$config")

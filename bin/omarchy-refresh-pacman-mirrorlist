@@ -13,7 +13,9 @@
 #   missing from the system file. This avoids removing Arch Linux ARM or user-added
 #   mirrors while still making Omarchy's recommended servers available.
 
-if omarchy-hw-aarch64; then
+machine_arch=$(omarchy-hw-arch) || { echo "Cannot determine a supported machine architecture." >&2; exit 1; }
+
+if [[ $machine_arch == "aarch64" ]]; then
   SRC="$OMARCHY_PATH/default/pacman/aarch64/mirrorlist"
   ASAHI_SRC="$OMARCHY_PATH/default/pacman/aarch64/mirrorlist.asahi-alarm"
 else

@@ -64,7 +64,7 @@ pass "no aarch64 mirrorlist points at an x86 Omarchy mirror"
 
 # refresh-pacman selects the tree from omarchy-hw-aarch64 rather than shipping
 # a single aarch64-only pacman.conf.
-grep -qF 'omarchy-hw-aarch64' "$ROOT/bin/omarchy-refresh-pacman" ||
+grep -qF 'machine_arch=$(omarchy-hw-arch)' "$ROOT/bin/omarchy-refresh-pacman" ||
   fail "omarchy-refresh-pacman selects the pacman tree by architecture"
 pass "omarchy-refresh-pacman selects the pacman tree by architecture"
 
@@ -84,7 +84,7 @@ pass "the mirrorlist refresh derives its source from OMARCHY_PATH"
 # must refuse to run on Apple Silicon (the inverse of the guard in
 # omarchy-upgrade-to-quattro-mac). It is not safe to execute here — it writes
 # /etc through sudo — so assert the guard statically instead.
-grep -qF '[[ $(omarchy-hw-arch) == "x86_64" ]]' "$ROOT/bin/omarchy-upgrade-to-quattro" ||
+grep -qF '    x86_64) ;;' "$ROOT/bin/omarchy-upgrade-to-quattro" ||
   fail "the upstream x86 upgrade fences itself off on Apple Silicon"
 pass "the upstream x86 upgrade fences itself off on Apple Silicon"
 
@@ -93,99 +93,5 @@ negated_arch_calls=$(rg -n '! omarchy-hw-aarch64' "$ROOT/bin" "$ROOT/install" ||
   fail "architecture gates never turn a missing detector into x86 success" "$negated_arch_calls"
 pass "all architecture gates fail closed when detection is unavailable"
 
-# --- Simulated aarch64 environment ------------------------------------------
-
-# The Mac fork's safety net: omarchy-pkg-add must skip a package the Arch ARM
-# repos do not serve, instead of passing it to pacman and failing the whole
-# transaction. Simulate pacman -Q/-Si/-S with a stub; only the ARM package
-# "exists" in the fake repos.
-test_tmp=$(mktemp -d)
-trap 'rm -rf "$test_tmp"' EXIT
-
-stub_bin="$test_tmp/bin"
-mkdir -p "$stub_bin"
-
-write_stub() {
-  local name="$1"
-  local body="$2"
-
-  cat >"$stub_bin/$name" <<<"$body"
-  chmod +x "$stub_bin/$name"
-}
-
-# -Q answers "installed" only after a -S has installed the package (the helper
-# re-checks with -Q after installing), and only for the one package that exists.
-write_stub pacman '#!/bin/bash
-case "$1" in
-  -Q)
-    if [[ $2 == "$ARM_ONLY_PKG" ]]; then
-      [[ -f $PKG_TEST_STATE ]] && exit 0
-      touch "$PKG_TEST_STATE"
-    fi
-    exit 1
-    ;;
-  -Si)
-    if [[ $2 == "$ARM_ONLY_PKG" ]]; then
-      echo "Repository : extra"
-      echo "Name        : $2"
-      exit 0
-    fi
-    exit 1
-    ;;
-  -S)
-    printf "pacman -S %s\n" "$*" >>"$PKG_TEST_LOG"
-    ;;
-  *) exit 1 ;;
-esac
-'
-
-write_stub omarchy-pkg-missing '#!/bin/bash
-exit 0
-'
-
-write_stub sudo '#!/bin/bash
-"$@"
-'
-
-write_stub omarchy-hw-aarch64 '#!/bin/bash
-exit 0
-'
-
-ARM_ONLY_PKG="ripgrep" \
-  PKG_TEST_STATE="$test_tmp/installed" \
-  PKG_TEST_LOG="$test_tmp/install.log" \
-  PATH="$stub_bin:$PATH" \
-  "$ROOT/bin/omarchy-pkg-add" ripgrep lib32-nvidia-utils >/dev/null 2>"$test_tmp/skip.log"
-
-grep -qF "Skipping 'lib32-nvidia-utils'" "$test_tmp/skip.log" ||
-  fail "the package helper skips packages the repos do not serve" "$(cat "$test_tmp/skip.log")"
-grep -qF 'ripgrep' "$test_tmp/install.log" ||
-  fail "the package helper installs the available package" "$(cat "$test_tmp/install.log")"
-! grep -qF 'lib32-nvidia-utils' "$test_tmp/install.log" ||
-  fail "the package helper never passes an unavailable package to pacman" "$(cat "$test_tmp/install.log")"
-pass "the package helper skips x86-only packages instead of failing the install"
-
-# On x86 the filter is off: a missing package is passed to pacman and the
-# helper fails, matching upstream omarchy-pkg-add.
-write_stub omarchy-hw-aarch64 '#!/bin/bash
-exit 1
-'
-rm -f "$test_tmp/installed" "$test_tmp/install.log" "$test_tmp/skip.log"
-set +e
-ARM_ONLY_PKG="ripgrep" \
-  PKG_TEST_STATE="$test_tmp/installed" \
-  PKG_TEST_LOG="$test_tmp/install.log" \
-  PATH="$stub_bin:$PATH" \
-  "$ROOT/bin/omarchy-pkg-add" ripgrep lib32-nvidia-utils >/dev/null 2>"$test_tmp/skip.log"
-x86_status=$?
-set -e
-(( x86_status != 0 )) || fail "x86 pkg-add fails when a package is missing"
-! grep -qF "Skipping 'lib32-nvidia-utils'" "$test_tmp/skip.log" ||
-  fail "x86 pkg-add does not skip missing packages" "$(cat "$test_tmp/skip.log")"
-grep -qF 'lib32-nvidia-utils' "$test_tmp/install.log" ||
-  fail "x86 pkg-add passes the missing package to pacman" "$(cat "$test_tmp/install.log")"
-pass "x86 pkg-add fails on missing packages, matching upstream"
-
-grep -qF 'EUID == 0' "$ROOT/bin/omarchy-pkg-add" ||
-  fail "omarchy-pkg-add keeps the upstream root path that calls pacman without sudo"
-pass "omarchy-pkg-add keeps the upstream EUID pacman path"
+# Required package failure propagation is exercised with the real helper and
+# mocked package transactions in pkg-add-test.sh, equally on ARM and x86.

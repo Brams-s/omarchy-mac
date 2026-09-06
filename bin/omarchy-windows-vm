@@ -2,7 +2,9 @@
 # omarchy:summary=Set up a Windows VM (unsupported on Apple Silicon)
 
 # Check for ARM64 architecture first
-if omarchy-hw-aarch64; then
+machine_arch=$(omarchy-hw-arch) || { echo "Cannot determine a supported machine architecture." >&2; exit 1; }
+
+if [[ $machine_arch == "aarch64" ]]; then
   cat << 'EOF'
 
 ╔═══════════════════════════════════════════════════════════════╗

@@ -1,8 +1,10 @@
 #!/bin/bash
+machine_arch=$(omarchy-hw-arch) || { echo "Cannot determine a supported machine architecture." >&2; return 1; }
+
 # Install optional proprietary/AUR apps (1Password, etc.)
 
 # Only run on aarch64
-if [[ $(omarchy-hw-arch) != "aarch64" ]]; then
+if [[ $machine_arch != "aarch64" ]]; then
   echo "Skipping optional apps: not aarch64 architecture"
   return 0
 fi

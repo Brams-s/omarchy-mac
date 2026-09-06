@@ -3,8 +3,7 @@
 # omarchy:summary=Overwrite the package configuration for /etc/pacman with the Omarchy default of using its dedicated mirrors and repositories, then update all packages.
 # omarchy:requires-sudo=true
 
-sudo cp -f /etc/pacman.conf /etc/pacman.conf.bak
-sudo cp -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
+machine_arch=$(omarchy-hw-arch) || { echo "Cannot determine a supported machine architecture." >&2; exit 1; }
 
 channel="${1:-stable}"
 
@@ -13,10 +12,13 @@ if [[ $channel != "stable" && $channel != "rc" && $channel != "edge" ]]; then
   exit 1
 fi
 
+sudo cp -f /etc/pacman.conf /etc/pacman.conf.bak
+sudo cp -f /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak
+
 echo "Setting channel to $channel"
 echo
 
-if omarchy-hw-aarch64; then
+if [[ $machine_arch == "aarch64" ]]; then
   pacman_dir="$OMARCHY_PATH/default/pacman/aarch64"
   mirrorlist_src="$pacman_dir/mirrorlist"
   if [[ -f /etc/pacman.d/mirrorlist.asahi-alarm ]]; then
@@ -29,7 +31,7 @@ fi
 
 sudo cp -f "$pacman_dir/pacman-$channel.conf" /etc/pacman.conf
 sudo cp -f "$mirrorlist_src" /etc/pacman.d/mirrorlist
-if omarchy-hw-aarch64; then
+if [[ $machine_arch == "aarch64" ]]; then
   sudo cp -f "$pacman_dir/mirrorlist.asahi-alarm" /etc/pacman.d/mirrorlist.asahi-alarm
 fi
 
@@ -38,7 +40,7 @@ omarchy-hook pre-refresh-pacman
 
 # Reset all package DBs and then update
 targets=()
-if omarchy-hw-aarch64; then
+if [[ $machine_arch == "aarch64" ]]; then
   source "$OMARCHY_PATH/install/helpers/arm-package-sources.sh"
   # Keep the original configuration saved before the channel replacement.
   omarchy_arm_prepare_package_sources /etc/pacman.conf preserve-backup || exit 1

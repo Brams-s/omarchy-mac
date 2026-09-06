@@ -1,6 +1,8 @@
+machine_arch=$(omarchy-hw-arch) || { echo "Cannot determine a supported machine architecture." >&2; return 1; }
+
 # Configure pacman after package installation completes. Offline target package
 # installs use the live ISO's offline pacman.conf until this final restore.
-if omarchy-hw-aarch64; then
+if [[ $machine_arch == "aarch64" ]]; then
   pacman_dir="$OMARCHY_PATH/default/pacman/aarch64"
 else
   pacman_dir="$OMARCHY_PATH/default/pacman"
@@ -14,7 +16,7 @@ mirrorlist_src="$pacman_dir/mirrorlist-${mirror}"
 # Overwriting the mirrorlist throws away the Asahi Alarm mirrors the machine
 # was installed with, leaving one slow generic server. Keep what is there and
 # append ours only where it is missing, as omarchy-refresh-pacman-mirrorlist does.
-if omarchy-hw-aarch64 && [[ -s /etc/pacman.d/mirrorlist ]] && grep -qE '^[[:space:]]*Server[[:space:]]*=' /etc/pacman.d/mirrorlist; then
+if [[ $machine_arch == "aarch64" ]] && [[ -s /etc/pacman.d/mirrorlist ]] && grep -qE '^[[:space:]]*Server[[:space:]]*=' /etc/pacman.d/mirrorlist; then
   while read -r mirror_line; do
     grep -qxF "$mirror_line" /etc/pacman.d/mirrorlist || printf '%s\n' "$mirror_line" >>/etc/pacman.d/mirrorlist
   done < <(grep -E '^[[:space:]]*Server[[:space:]]*=' "$mirrorlist_src")
@@ -24,7 +26,7 @@ fi
 
 # aarch64 pacman.conf Includes the asahi-alarm mirrorlist, so ship it with them.
 # Without the file pacman refuses to parse its config at all.
-if omarchy-hw-aarch64 && [[ -f $pacman_dir/mirrorlist.asahi-alarm ]]; then
+if [[ $machine_arch == "aarch64" ]] && [[ -f $pacman_dir/mirrorlist.asahi-alarm ]]; then
   cp -f "$pacman_dir/mirrorlist.asahi-alarm" /etc/pacman.d/mirrorlist.asahi-alarm
 fi
 

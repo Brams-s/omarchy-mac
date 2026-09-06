@@ -12,9 +12,9 @@ mkdir -p "$stub_bin"
 
 # Exercise the ARM update targets on every host, while keeping repository and
 # keyring preparation out of these conflict-recovery tests.
-cat >"$stub_bin/omarchy-hw-aarch64" <<'STUB'
+cat >"$stub_bin/omarchy-hw-arch" <<'STUB'
 #!/bin/bash
-exit 0
+printf 'aarch64\n'
 STUB
 
 mkdir -p "$test_tmp/omarchy/install/helpers"
@@ -56,7 +56,7 @@ fi
 echo "upgrade complete"
 STUB
 
-chmod +x "$stub_bin/sudo" "$stub_bin/pacman" "$stub_bin/omarchy-hw-aarch64"
+chmod +x "$stub_bin/sudo" "$stub_bin/pacman" "$stub_bin/omarchy-hw-arch"
 
 replaced="$test_tmp/replaced"
 

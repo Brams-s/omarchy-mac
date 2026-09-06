@@ -70,15 +70,32 @@ OMARCHY_UNAME_M=aarch64 OMARCHY_APPLE_COMPATIBLE="$tmp_dir/compatible" hw apple-
   fail "aarch64 with apple DT is Apple Silicon"
 pass "aarch64 with apple DT is Apple Silicon"
 
-# Laptop detection: Apple Silicon counts even without ACPI lid or DMI chassis.
-OMARCHY_UNAME_M=x86_64 \
-  OMARCHY_DMI_CHASSIS_TYPE_PATH="$tmp_dir/missing" \
-  OMARCHY_APPLE_COMPATIBLE="$tmp_dir/compatible" \
-  hw laptop && fail "x86_64 without lid or chassis is not a laptop" || true
-pass "x86_64 without lid or chassis is not a laptop"
+# Both Boolean detectors share the canonical helper, including uname failure.
+for emitted in aarch64 arm64 x86_64; do
+  uname() { printf '%s\n' "$OMARCHY_TEST_UNAME_OUTPUT"; return 1; }
+  export -f uname
+  export OMARCHY_TEST_UNAME_OUTPUT="$emitted"
+  for detector in arch aarch64 apple-silicon; do
+    if OMARCHY_UNAME_M= OMARCHY_APPLE_COMPATIBLE="$tmp_dir/compatible" hw "$detector" >/dev/null; then
+      fail "failed uname cannot satisfy $detector even when it prints $emitted"
+    fi
+  done
+  unset -f uname
+done
+pass "all architecture and Apple detectors reject recognized output from a failed uname"
 
-OMARCHY_UNAME_M=aarch64 \
-  OMARCHY_DMI_CHASSIS_TYPE_PATH="$tmp_dir/missing" \
-  OMARCHY_APPLE_COMPATIBLE="$tmp_dir/compatible" \
-  hw laptop || fail "Apple Silicon is a laptop without ACPI lid or DMI"
-pass "Apple Silicon is a laptop without ACPI lid or DMI"
+printf 'pineapple,board\0vendor,apple-similar\0' >"$tmp_dir/compatible"
+if OMARCHY_UNAME_M=aarch64 OMARCHY_APPLE_COMPATIBLE="$tmp_dir/compatible" hw apple-silicon; then
+  fail "an Apple substring is not the Apple device-tree vendor"
+fi
+printf 'vendor,board\0apple,arm-platform\0' >"$tmp_dir/compatible"
+OMARCHY_UNAME_M=arm64 OMARCHY_APPLE_COMPATIBLE="$tmp_dir/compatible" hw apple-silicon ||
+  fail "Apple compatible identity can follow another NUL-delimited entry"
+pass "Apple detection matches vendor entries in the complete device-tree list"
+
+chmod 000 "$tmp_dir/compatible"
+if OMARCHY_UNAME_M=aarch64 OMARCHY_APPLE_COMPATIBLE="$tmp_dir/compatible" hw apple-silicon; then
+  fail "unreadable firmware cannot establish Apple identity"
+fi
+chmod 600 "$tmp_dir/compatible"
+pass "Apple detection rejects unreadable firmware"
