@@ -103,7 +103,7 @@ pass "direct package builds find checkout detectors before any installed Omarchy
 # Run their actual guard functions in a shell whose PATH contains only uname.
 mkdir "$work/standalone-bin"
 cp "$work/bin/uname" "$work/standalone-bin/"
-for script in omarchy-upgrade-to-quattro omarchy-upgrade-to-quattro-mac omarchy-system-boot-to-esp omarchy-system-btrfs-migrate; do
+for script in omarchy-upgrade-to-quattro omarchy-upgrade-to-quattro-mac omarchy-system-boot-to-esp omarchy-system-btrfs-migrate omarchy-pkg-publish-aarch64; do
   guard=$(sed -n '/^check_architecture() {/,/^}/p' "$ROOT/bin/$script")
   [[ -n $guard ]] || fail "$script carries its standalone architecture guard"
   for arch in x86_64 aarch64 arm64 unknown; do

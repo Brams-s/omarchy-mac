@@ -5,7 +5,7 @@ system.
 
 ## Mental model
 
-Architecture is detected by `omarchy-hw-arch` (prints `aarch64` or `x86_64`; returns nonzero with no stdout for unsupported or failed detection), `omarchy-hw-aarch64` (boolean), and `omarchy-hw-apple-silicon` (aarch64 plus Apple in the device tree). Those three commands are the only place install and runtime code may read `uname -m` or `/proc/device-tree/compatible`. `omarchy-mac-setup` is the exception: it can run from `curl | bash` before the repo exists.
+Architecture and hardware detection use shared predicates; documented downloaded entrypoints retain narrow self-contained guards. See [Platform detection and bootstrap](platform-detection.md) for the supported architecture names, Apple vendor matching, chassis/lid capabilities and standalone-script exceptions.
 
 x86 uses the files at `default/pacman/` (upstream Omarchy). aarch64 uses `default/pacman/aarch64/`. `omarchy-refresh-pacman` selects the tree. `install.sh` runs `install/aarch64/install.sh` on aarch64 and points x86 users at the Omarchy ISO.
 

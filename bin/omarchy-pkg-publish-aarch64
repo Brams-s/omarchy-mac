@@ -58,6 +58,17 @@ fail() {
   exit 1
 }
 
+# Publishing prebuilt archives is architecture-independent. Building can also
+# run from this downloaded file before any Omarchy helper has been installed.
+check_architecture() {
+  local detected_arch
+  detected_arch=$(uname -m) || fail "Could not determine the machine architecture."
+  case $detected_arch in
+    aarch64 | arm64) ;;
+    *) fail "building runs on aarch64; use --from to publish packages built elsewhere" ;;
+  esac
+}
+
 # Pull the GitHub repo and release tag out of the pacman Server line, so the
 # publisher and the machines installing from it can never disagree about where
 # the packages live. Prints "owner/repo tag".
@@ -151,8 +162,7 @@ main() {
     (( ${#built[@]} )) || fail "no packages in $from_dir"
   else
     (( ${#packages[@]} )) || packages=(quickshell-git)
-    omarchy-hw-aarch64 ||
-      fail "building runs on aarch64; use --from to publish packages built elsewhere"
+    check_architecture
     command -v makepkg >/dev/null || fail "makepkg is required (install base-devel)"
 
     local build_dir="$work_root/build"
