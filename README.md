@@ -164,6 +164,19 @@ for the running kernel.
 
 Run `bash fix-mirrors.sh` from the repository root and retry.
 
+### The update stops on `libaquamarine.so` and cannot be repeated past it
+
+An install made before the ARM package sources policy cannot upgrade its way to
+it, because the update aborts before the package carrying it can be replaced.
+Run the recovery and log out and back in afterwards:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/omarchy-mac/omarchy-mac/quattro/fix-arm-packages.sh | bash
+```
+
+See [docs/arm-package-sources.md](docs/arm-package-sources.md) for what it
+changes and for `--dry-run`.
+
 ---
 
 ## Removal (uninstall)
