@@ -24,6 +24,18 @@ error: failed to prepare transaction (could not satisfy dependencies)
 curl -fsSL https://raw.githubusercontent.com/omarchy-mac/omarchy-mac/quattro/fix-arm-packages.sh | bash
 ```
 
-The transaction runs as `sudo env OMARCHY_UPDATE_PACMAN=1 pacman -Syu`, the same way `omarchy-update-system-pkgs` and `omarchy-refresh-pacman` do. The update guard hook aborts a `-Syu` that does not identify itself, and this is the update path arriving by another route rather than someone reaching past it.
+The transaction runs as `sudo env OMARCHY_UPDATE_PACMAN=1 pacman -Syu --noconfirm`, the same way `omarchy-update-system-pkgs` and `omarchy-refresh-pacman` do. The update guard hook aborts a `-Syu` that does not identify itself, and this is the update path arriving by another route rather than someone reaching past it. The transaction is noninteractive because the recommended pipe supplies the script itself on standard input.
 
-`--dry-run` reports the configuration change and the transaction without applying either, and is the only mode that runs off Apple Silicon. `--no-snapshot` skips the Snapper snapshot the script otherwise takes of the machine as found. The transaction replaces the running compositor, so log out and back in before doing anything else.
+`--dry-run` reports the configuration change and the transaction without applying either, and is the only mode that runs off Apple Silicon. Pass options after `bash -s --` when running the script through a pipe:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/omarchy-mac/omarchy-mac/quattro/fix-arm-packages.sh | bash -s -- --dry-run
+```
+
+`--no-snapshot` skips the Snapper snapshot the script otherwise takes of the machine as found and can be passed the same way:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/omarchy-mac/omarchy-mac/quattro/fix-arm-packages.sh | bash -s -- --no-snapshot
+```
+
+The transaction replaces the running compositor, so log out and back in before doing anything else.

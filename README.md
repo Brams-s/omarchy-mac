@@ -174,8 +174,7 @@ Run the recovery and log out and back in afterwards:
 curl -fsSL https://raw.githubusercontent.com/omarchy-mac/omarchy-mac/quattro/fix-arm-packages.sh | bash
 ```
 
-See [docs/arm-package-sources.md](docs/arm-package-sources.md) for what it
-changes and for `--dry-run`.
+See [docs/arm-package-sources.md](docs/arm-package-sources.md) for what it changes and how to pass `--dry-run` or `--no-snapshot` to the piped script.
 
 ---
 

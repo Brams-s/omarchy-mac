@@ -21,6 +21,7 @@ readonly PACMAN_CONF="${OMARCHY_ARM_PACMAN_CONF:-/etc/pacman.conf}"
 dry_run=0
 snapshot=1
 downloaded_helper=""
+helper=""
 
 cleanup() {
   [[ -n $downloaded_helper ]] && rm -f "$downloaded_helper"
@@ -85,14 +86,14 @@ resolve_helper() {
 
   for candidate in "$script_dir" "${OMARCHY_PATH:-}" /usr/share/omarchy; do
     if [[ -n $candidate && -f "$candidate/$HELPER_RELATIVE_PATH" ]]; then
-      printf '%s\n' "$candidate/$HELPER_RELATIVE_PATH"
+      helper="$candidate/$HELPER_RELATIVE_PATH"
       return 0
     fi
   done
 
   downloaded_helper=$(mktemp)
   if curl -fsSL "$HELPER_URL" -o "$downloaded_helper"; then
-    printf '%s\n' "$downloaded_helper"
+    helper="$downloaded_helper"
     return 0
   fi
 
@@ -101,7 +102,7 @@ resolve_helper() {
   return 1
 }
 
-if ! helper=$(resolve_helper); then
+if ! resolve_helper; then
   echo "Could not find or fetch $HELPER_RELATIVE_PATH" >&2
   exit 1
 fi
@@ -126,7 +127,7 @@ if (( dry_run )); then
   echo "Configuration change for $PACMAN_CONF:"
   diff -u "$PACMAN_CONF" "$preview" || true
   rm -f "$preview" "$preview.bak"
-  echo "would run: sudo env OMARCHY_UPDATE_PACMAN=1 pacman -Syu ${targets[*]}"
+  echo "would run: sudo env OMARCHY_UPDATE_PACMAN=1 pacman -Syu --noconfirm ${targets[*]}"
   exit 0
 fi
 
@@ -150,7 +151,7 @@ fi
 # way omarchy-update-system-pkgs does. Without it the hook aborts the
 # transaction and the recovery gets no further than the machine it is fixing.
 echo "Updating the Hyprland stack together with the system"
-sudo env OMARCHY_UPDATE_PACMAN=1 pacman -Syu "${targets[@]}"
+sudo env OMARCHY_UPDATE_PACMAN=1 pacman -Syu --noconfirm "${targets[@]}"
 
 cat <<'EOF'
 
